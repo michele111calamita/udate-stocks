@@ -35,6 +35,8 @@ from app.routers import sync as sync_router
 app.include_router(sync_router.router)
 
 import os as _os
-if _os.path.isdir("static"):
+# Angular 19 application builder outputs to static/browser/ locally, flat in Docker
+_static = "static/browser" if _os.path.isdir("static/browser") else "static"
+if _os.path.isdir(_static):
     from fastapi.staticfiles import StaticFiles
-    app.mount("/", StaticFiles(directory="static", html=True), name="static")
+    app.mount("/", StaticFiles(directory=_static, html=True), name="static")
