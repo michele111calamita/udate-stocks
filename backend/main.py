@@ -27,3 +27,6 @@ app.include_router(auth_router.router)
 
 from app.routers import admin as admin_router
 app.include_router(admin_router.router)
+
+from app.routers import shopify as shopify_router
+app.include_router(shopify_router.router)
