@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git reset *)",
+      "Bash(pip install *)",
+      "Bash(timeout 8 uvicorn main:app --reload)",
+      "Bash(python -m uvicorn main:app --reload)",
+      "Bash(kill %1)",
+      "Bash(wait)",
+      "Bash(git *)",
+      "Bash(python -m pytest tests/test_auth.py -v)",
+      "Bash(python -c \"import bcrypt; print\\(bcrypt.__version__\\)\")",
+      "Bash(pytest tests/test_auth.py -v)",
+      "Bash(python -m pytest tests/test_auth.py::test_login_wrong_password tests/test_auth.py::test_login_unknown_email -v)",
+      "Bash(python -m pytest tests/test_auth.py -v --tb=short)",
+      "Bash(python -c \"import os; os.environ['DATABASE_URL']='sqlite:///./test.db'; os.environ['JWT_SECRET']='test'; from app.auth import verify_password, hash_password; h=hash_password\\('secret'\\); print\\(verify_password\\('wrong', h\\)\\); print\\(verify_password\\('secret', h\\)\\)\")",
+      "Bash(python -m pytest tests/test_auth.py tests/test_auth.py -v)",
+      "Bash(python -m pytest tests/ -v --co)"
+    ]
+  }
+}
