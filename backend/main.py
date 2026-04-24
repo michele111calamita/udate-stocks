@@ -24,3 +24,6 @@ def health():
 
 from app.routers import auth as auth_router
 app.include_router(auth_router.router)
+
+from app.routers import admin as admin_router
+app.include_router(admin_router.router)
