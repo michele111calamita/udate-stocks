@@ -26,3 +26,4 @@ class TemplateInfo(BaseModel):
     uploaded_at: datetime
     sku_column: str
     qty_column: str
+    model_config = {"from_attributes": True}
