@@ -30,3 +30,6 @@ app.include_router(admin_router.router)
 
 from app.routers import shopify as shopify_router
 app.include_router(shopify_router.router)
+
+from app.routers import sync as sync_router
+app.include_router(sync_router.router)
