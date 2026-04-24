@@ -33,3 +33,8 @@ app.include_router(shopify_router.router)
 
 from app.routers import sync as sync_router
 app.include_router(sync_router.router)
+
+import os as _os
+if _os.path.isdir("static"):
+    from fastapi.staticfiles import StaticFiles
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")
