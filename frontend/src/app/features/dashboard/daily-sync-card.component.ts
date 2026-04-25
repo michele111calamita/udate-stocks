@@ -9,10 +9,10 @@ import { ApiService } from '../../core/services/api.service';
   template: `
     <section class="card">
       <h2>Sync Giornaliero</h2>
-      <p>Carica il CSV esportato da Maestro per aggiornare le giacenze.</p>
-      <input type="file" accept=".csv" (change)="onFile($event)" #si hidden />
+      <p>Carica il file esportato da Maestro per aggiornare le giacenze.</p>
+      <input type="file" accept=".csv,.xls,.xlsx" (change)="onFile($event)" #si hidden />
       <button (click)="si.click()" [disabled]="syncing()">
-        {{ syncing() ? 'Elaborazione...' : 'Carica CSV Maestro' }}
+        {{ syncing() ? 'Elaborazione...' : 'Carica file Maestro' }}
       </button>
       @if (result()) {
         <div class="result">
