@@ -77,7 +77,17 @@ from app.routers import sync as sync_router
 app.include_router(sync_router.router)
 
 import os as _os
+from fastapi.responses import FileResponse
+from fastapi import HTTPException
+
 _static = "static/browser" if _os.path.isdir("static/browser") else "static"
-if _os.path.isdir(_static):
-    from fastapi.staticfiles import StaticFiles
-    app.mount("/", StaticFiles(directory=_static, html=True), name="static")
+
+@app.get("/{full_path:path}", include_in_schema=False)
+async def spa_fallback(full_path: str):
+    file_path = _os.path.join(_static, full_path)
+    if _os.path.isfile(file_path):
+        return FileResponse(file_path)
+    index = _os.path.join(_static, "index.html")
+    if _os.path.isfile(index):
+        return FileResponse(index)
+    raise HTTPException(status_code=404)
