@@ -3,7 +3,7 @@ from typing import Optional
 import pandas as pd
 
 SKU_CANDIDATES = ["variant sku", "sku", "codice", "cod", "articolo"]
-QTY_CANDIDATES = ["variant inventory qty", "quantity", "qty", "giacenza", "disponibile", "quantita", "quantità"]
+QTY_CANDIDATES = ["variant inventory qty", "quantity", "qty", "giacenza", "disponibile", "quantita", "quantità", "principale", "negozio"]
 
 def detect_column(columns: list[str], candidates: list[str]) -> Optional[str]:
     lower_map = {c.lower().strip(): c for c in columns}
