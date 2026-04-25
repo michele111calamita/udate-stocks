@@ -8,7 +8,7 @@ COPY frontend/ ./
 RUN npx ng build --output-path=dist --base-href=/
 
 # Stage 2: Python backend
-FROM python:3.12-slim
+FROM python:3.12
 
 WORKDIR /app
 
