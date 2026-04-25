@@ -8,11 +8,32 @@ from app.database import engine
 from app import models
 
 
+def _setup_db():
+    from app.database import SessionLocal
+    from app.auth import hash_password
+    models.Base.metadata.create_all(bind=engine)
+    if not settings.first_admin_email or not settings.first_admin_password:
+        return
+    db = SessionLocal()
+    try:
+        exists = db.query(models.User).filter(models.User.email == settings.first_admin_email).first()
+        if not exists:
+            db.add(models.User(
+                email=settings.first_admin_email,
+                password_hash=hash_password(settings.first_admin_password),
+                is_admin=True,
+            ))
+            db.commit()
+            print(f"Admin created: {settings.first_admin_email}")
+    finally:
+        db.close()
+
+
 async def _init_db():
     loop = asyncio.get_event_loop()
     for attempt in range(10):
         try:
-            await loop.run_in_executor(None, lambda: models.Base.metadata.create_all(bind=engine))
+            await loop.run_in_executor(None, _setup_db)
             return
         except Exception as exc:
             if attempt == 9:
