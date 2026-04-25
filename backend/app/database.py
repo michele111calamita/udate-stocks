@@ -3,7 +3,11 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.config import settings
 
 _db_url = settings.database_url.replace("postgres://", "postgresql://", 1)
-engine = create_engine(_db_url)
+engine = create_engine(
+    _db_url,
+    pool_timeout=10,
+    connect_args={"connect_timeout": 10},
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 class Base(DeclarativeBase):
