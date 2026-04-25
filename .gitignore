@@ -21,8 +21,6 @@ backend/.env
 # Uploads
 backend/uploads/
 
-# Angular prod build
-backend/static/
 
 # Node / Angular
 node_modules/
