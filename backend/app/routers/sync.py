@@ -27,8 +27,16 @@ def sync(
         raise HTTPException(status_code=404, detail="No Shopify template uploaded yet")
 
     maestro_bytes = file.file.read()
+    fname = (file.filename or "").lower()
+    maestro_fmt = "xlsx" if fname.endswith(".xlsx") else "xls" if fname.endswith(".xls") else "csv"
+
     try:
-        header_df = pd.read_csv(io.BytesIO(maestro_bytes), dtype=str, nrows=0)
+        buf = io.BytesIO(maestro_bytes)
+        if maestro_fmt == "csv":
+            header_df = pd.read_csv(buf, dtype=str, nrows=0)
+        else:
+            engine = "xlrd" if maestro_fmt == "xls" else "openpyxl"
+            header_df = pd.read_excel(buf, dtype=str, nrows=0, engine=engine)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Cannot parse Maestro file: {e}")
 
@@ -47,6 +55,7 @@ def sync(
         shopify_sku_col=template.sku_column,
         shopify_qty_col=template.qty_column,
         maestro_bytes=maestro_bytes,
+        maestro_fmt=maestro_fmt,
         maestro_sku_col=maestro_sku,
         maestro_qty_col=maestro_qty,
     )

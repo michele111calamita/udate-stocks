@@ -33,9 +33,15 @@ def sync_quantities(
     maestro_bytes: bytes,
     maestro_sku_col: str,
     maestro_qty_col: str,
+    maestro_fmt: str = "csv",
 ) -> tuple[bytes, int]:
     shopify_df = read_file(shopify_path, shopify_fmt)
-    maestro_df = pd.read_csv(io.BytesIO(maestro_bytes), dtype=str)
+    buf = io.BytesIO(maestro_bytes)
+    if maestro_fmt == "csv":
+        maestro_df = pd.read_csv(buf, dtype=str)
+    else:
+        engine = "xlrd" if maestro_fmt == "xls" else "openpyxl"
+        maestro_df = pd.read_excel(buf, dtype=str, engine=engine)
 
     maestro_map = dict(zip(
         maestro_df[maestro_sku_col].str.strip(),
