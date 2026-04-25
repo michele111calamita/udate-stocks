@@ -1,7 +1,8 @@
+import base64
 import io
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import models
@@ -9,12 +10,6 @@ from app.dependencies import get_current_user
 from services.file_processor import detect_column, sync_quantities, SKU_CANDIDATES, QTY_CANDIDATES
 
 router = APIRouter(prefix="/api", tags=["sync"])
-
-_MEDIA = {
-    "csv": "text/csv",
-    "xls": "application/vnd.ms-excel",
-    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-}
 
 @router.post("/sync")
 def sync(
@@ -49,7 +44,7 @@ def sync(
     if not maestro_qty:
         raise HTTPException(status_code=422, detail={"message": "Quantity column not found in Maestro file", "columns": cols})
 
-    output_bytes, unmatched = sync_quantities(
+    output_bytes, matched, unmatched = sync_quantities(
         shopify_path=template.filepath,
         shopify_fmt=template.format.value,
         shopify_sku_col=template.sku_column,
@@ -61,11 +56,9 @@ def sync(
     )
 
     fmt = template.format.value
-    return StreamingResponse(
-        io.BytesIO(output_bytes),
-        media_type=_MEDIA[fmt],
-        headers={
-            "Content-Disposition": f'attachment; filename="shopify_updated.{fmt}"',
-            "X-Unmatched-SKUs": str(unmatched),
-        },
-    )
+    return {
+        "filename": f"shopify_updated.{fmt}",
+        "file_b64": base64.b64encode(output_bytes).decode(),
+        "matched": matched,
+        "unmatched": unmatched,
+    }

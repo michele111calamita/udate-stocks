@@ -34,7 +34,7 @@ def sync_quantities(
     maestro_sku_col: str,
     maestro_qty_col: str,
     maestro_fmt: str = "csv",
-) -> tuple[bytes, int]:
+) -> tuple[bytes, list[dict], list[str]]:
     shopify_df = read_file(shopify_path, shopify_fmt)
     buf = io.BytesIO(maestro_bytes)
     if maestro_fmt == "csv":
@@ -48,12 +48,19 @@ def sync_quantities(
         maestro_df[maestro_qty_col].str.strip(),
     ))
 
-    unmatched = 0
+    matched: list[dict] = []
+    unmatched: list[str] = []
+
     for i, row in shopify_df.iterrows():
         sku = str(row[shopify_sku_col]).strip()
+        if not sku or sku == "nan":
+            continue
         if sku in maestro_map:
-            shopify_df.at[i, shopify_qty_col] = maestro_map[sku]
+            old_qty = str(row[shopify_qty_col]).strip()
+            new_qty = maestro_map[sku]
+            shopify_df.at[i, shopify_qty_col] = new_qty
+            matched.append({"sku": sku, "old_qty": old_qty, "new_qty": new_qty})
         else:
-            unmatched += 1
+            unmatched.append(sku)
 
-    return write_file(shopify_df, shopify_fmt), unmatched
+    return write_file(shopify_df, shopify_fmt), matched, unmatched

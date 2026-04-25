@@ -16,3 +16,16 @@ export interface TemplateInfo {
   sku_column: string;
   qty_column: string;
 }
+
+export interface MatchedRow {
+  sku: string;
+  old_qty: string;
+  new_qty: string;
+}
+
+export interface SyncResult {
+  filename: string;
+  file_b64: string;
+  matched: MatchedRow[];
+  unmatched: string[];
+}

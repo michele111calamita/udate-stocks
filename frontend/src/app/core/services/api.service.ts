@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { User, TemplateInfo } from '../models/types';
+import { User, TemplateInfo, SyncResult } from '../models/types';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -17,13 +17,10 @@ export class ApiService {
     return this.http.get<TemplateInfo>('/api/shopify-template');
   }
 
-  sync(file: File): Observable<HttpResponse<Blob>> {
+  sync(file: File): Observable<SyncResult> {
     const form = new FormData();
     form.append('file', file);
-    return this.http.post('/api/sync', form, {
-      responseType: 'blob',
-      observe: 'response',
-    });
+    return this.http.post<SyncResult>('/api/sync', form);
   }
 
   createUser(email: string, password: string, is_admin: boolean): Observable<User> {
