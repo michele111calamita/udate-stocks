@@ -11,11 +11,12 @@ from services.file_processor import read_file_from_bytes
 
 router = APIRouter(prefix="/api", tags=["mapping"])
 
-def _shopify_columns(template: models.ShopifyTemplate) -> list[str]:
+def _shopify_data(template: models.ShopifyTemplate) -> tuple[list[str], list[dict[str, str]]]:
     with open(template.filepath, "rb") as f:
         data = f.read()
     df = read_file_from_bytes(data, template.format.value)
-    return list(df.columns)
+    sample = df.head(5).fillna("").astype(str).to_dict(orient="records")
+    return list(df.columns), sample
 
 @router.get("/mapping", response_model=ColumnMappingRead)
 def get_mapping(
@@ -32,10 +33,12 @@ def get_mapping(
         models.ColumnMapping.user_id == user.id
     ).first()
 
+    shopify_columns, shopify_sample_rows = _shopify_data(template)
     return ColumnMappingRead(
         mappings=cm.mappings if cm else {},
         maestro_columns=cm.maestro_columns if cm else [],
-        shopify_columns=_shopify_columns(template),
+        shopify_columns=shopify_columns,
+        shopify_sample_rows=shopify_sample_rows,
     )
 
 @router.put("/mapping", status_code=200)

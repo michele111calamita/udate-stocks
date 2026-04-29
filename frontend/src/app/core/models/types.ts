@@ -39,6 +39,7 @@ export interface MappingConfig {
   mappings: Record<string, string>;
   maestro_columns: string[];
   shopify_columns: string[];
+  shopify_sample_rows: Record<string, string>[];
 }
 
 export interface AddProductsResponse {

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
-import { SyncResult, MaestroRow } from '../../core/models/types';
+import { SyncResult, MaestroRow, MappingConfig } from '../../core/models/types';
 
 @Component({
   selector: 'app-daily-sync-card',
@@ -99,6 +99,38 @@ import { SyncResult, MaestroRow } from '../../core/models/types';
                   </tbody>
                 </table>
               }
+            </div>
+          }
+
+          <div class="preview-toggle">
+            <button class="btn-preview" (click)="togglePreview()">
+              {{ showPreview() ? 'Nascondi anteprima' : 'Anteprima template Shopify' }}
+            </button>
+          </div>
+
+          @if (showPreview() && shopifyPreviewColumns().length) {
+            <div class="preview-section">
+              <h3 class="preview-title">Anteprima template Shopify (prime 5 righe)</h3>
+              <div class="preview-scroll">
+                <table class="preview-table">
+                  <thead>
+                    <tr>
+                      @for (col of shopifyPreviewColumns(); track col) {
+                        <th>{{ col }}</th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of shopifyPreviewRows(); track $index) {
+                      <tr>
+                        @for (col of shopifyPreviewColumns(); track col) {
+                          <td>{{ row[col] }}</td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
             </div>
           }
         </div>
@@ -404,6 +436,81 @@ import { SyncResult, MaestroRow } from '../../core/models/types';
     tr { cursor: pointer; }
     tr:hover td { background: var(--bg); }
     tr.selected-row:hover td { background: #E8EEFF; }
+
+    .preview-toggle {
+      margin-top: 16px;
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .btn-preview {
+      padding: 7px 14px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .btn-preview:hover { color: var(--text); border-color: var(--text-muted); }
+
+    .preview-section {
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .preview-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 12px;
+      margin: 0;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .preview-scroll {
+      overflow-x: auto;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .preview-table {
+      border-collapse: collapse;
+      font-size: 12px;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .preview-table thead { position: sticky; top: 0; z-index: 1; }
+
+    .preview-table th {
+      background: var(--bg);
+      padding: 7px 12px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .preview-table td {
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      color: var(--text);
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .preview-table tr:last-child td { border-bottom: none; }
   `],
 })
 export class DailySyncCardComponent {
@@ -415,6 +522,11 @@ export class DailySyncCardComponent {
   resultTab = signal<'matched' | 'unmatched'>('matched');
   maestroFilter = signal('');
   selectedIndices = signal<Set<number>>(new Set());
+  showPreview = signal(false);
+  shopifyConfig = signal<MappingConfig | null>(null);
+
+  shopifyPreviewColumns = computed(() => this.shopifyConfig()?.shopify_columns ?? []);
+  shopifyPreviewRows = computed(() => (this.shopifyConfig()?.shopify_sample_rows ?? []).slice(0, 5));
 
   maestroColumns = computed(() => {
     const rows = this.result()?.maestro_rows ?? [];
@@ -433,6 +545,17 @@ export class DailySyncCardComponent {
   });
 
   constructor(private api: ApiService) {}
+
+  togglePreview() {
+    if (!this.showPreview() && !this.shopifyConfig()) {
+      this.api.getMapping().subscribe({
+        next: cfg => { this.shopifyConfig.set(cfg); this.showPreview.set(true); },
+        error: () => { this.showPreview.set(true); },
+      });
+    } else {
+      this.showPreview.set(!this.showPreview());
+    }
+  }
 
   onFile(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];

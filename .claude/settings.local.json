@@ -17,7 +17,14 @@
       "Bash(python -m pytest tests/test_auth.py -v --tb=short)",
       "Bash(python -c \"import os; os.environ['DATABASE_URL']='sqlite:///./test.db'; os.environ['JWT_SECRET']='test'; from app.auth import verify_password, hash_password; h=hash_password\\('secret'\\); print\\(verify_password\\('wrong', h\\)\\); print\\(verify_password\\('secret', h\\)\\)\")",
       "Bash(python -m pytest tests/test_auth.py tests/test_auth.py -v)",
-      "Bash(python -m pytest tests/ -v --co)"
+      "Bash(python -m pytest tests/ -v --co)",
+      "Bash(npm run *)",
+      "Bash(python -m uvicorn main:app --port 8000)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(curl *)",
+      "Bash(python *)",
+      "Bash(pytest -v)",
+      "Bash(npx tsc *)"
     ]
   }
 }

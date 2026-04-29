@@ -32,6 +32,7 @@ class ColumnMappingRead(BaseModel):
     mappings: dict[str, str]
     maestro_columns: list[str]
     shopify_columns: list[str]
+    shopify_sample_rows: list[dict[str, str]]
 
 class ColumnMappingWrite(BaseModel):
     mappings: dict[str, str]
