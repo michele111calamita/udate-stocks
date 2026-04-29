@@ -1,12 +1,14 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
-import { SyncResult } from '../../core/models/types';
+import { SyncResult, MaestroRow } from '../../core/models/types';
 
 @Component({
   selector: 'app-daily-sync-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="card">
       <div class="card-header">
@@ -40,8 +42,16 @@ import { SyncResult } from '../../core/models/types';
               <span class="stat-num">{{ result()!.unmatched.length }}</span>
               <span class="stat-label">non trovati</span>
             </div>
-            <button class="btn-download" (click)="download()">Scarica</button>
+            <button class="btn-download" (click)="download()" [disabled]="downloading()">
+              @if (downloading()) { ... }
+              @else if (selectedIndices().size > 0) { Scarica ({{ selectedIndices().size }} aggiunte) }
+              @else { Scarica }
+            </button>
           </div>
+
+          @if (downloadError()) {
+            <div class="error-box">{{ downloadError() }}</div>
+          }
 
           <div class="result-tabs">
             <button class="result-tab" [class.active]="resultTab() === 'matched'" (click)="resultTab.set('matched')">
@@ -91,6 +101,62 @@ import { SyncResult } from '../../core/models/types';
               }
             </div>
           }
+        </div>
+
+        <!-- Maestro product selection section -->
+        <div class="maestro-section">
+          <div class="maestro-header">
+            <div class="maestro-title-row">
+              <h3>Aggiungi prodotti da Maestro</h3>
+              <a routerLink="/settings" class="mapping-link">Configura mapping colonne</a>
+            </div>
+            <div class="maestro-controls">
+              <input
+                class="sku-filter"
+                type="text"
+                placeholder="Filtra SKU: SKU001;SKU002;SKU003"
+                [ngModel]="maestroFilter()"
+                (ngModelChange)="maestroFilter.set($event)"
+              />
+              <button class="btn-select-all" (click)="selectAll()">
+                Seleziona tutto ({{ filteredRows().length }})
+              </button>
+              @if (selectedIndices().size > 0) {
+                <button class="btn-clear" (click)="clearSelection()">Deseleziona tutto</button>
+              }
+            </div>
+          </div>
+
+          <div class="table-wrap maestro-table-wrap">
+            @if (result()!.maestro_rows.length === 0) {
+              <div class="empty-tab">Nessuna riga nel file Maestro</div>
+            } @else if (filteredRows().length === 0) {
+              <div class="empty-tab">Nessuna riga corrisponde al filtro</div>
+            } @else {
+              <table>
+                <thead>
+                  <tr>
+                    <th class="cb-col"></th>
+                    @for (col of maestroColumns(); track col) {
+                      <th>{{ col }}</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (entry of filteredRows(); track entry.idx) {
+                    <tr [class.selected-row]="selectedIndices().has(entry.idx)" (click)="toggleRow(entry.idx)">
+                      <td class="cb-col">
+                        <input type="checkbox" [checked]="selectedIndices().has(entry.idx)" (click)="$event.stopPropagation()" (change)="toggleRow(entry.idx)" />
+                      </td>
+                      @for (col of maestroColumns(); track col) {
+                        <td class="mono">{{ entry.row[col] }}</td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
         </div>
       }
     </div>
@@ -194,7 +260,8 @@ import { SyncResult } from '../../core/models/types';
       cursor: pointer;
       transition: opacity 0.15s;
     }
-    .btn-download:hover { opacity: 0.82; }
+    .btn-download:hover:not(:disabled) { opacity: 0.82; }
+    .btn-download:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .result-tabs {
       display: flex;
@@ -227,7 +294,7 @@ import { SyncResult } from '../../core/models/types';
 
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
-    thead { position: sticky; top: 0; }
+    thead { position: sticky; top: 0; z-index: 1; }
 
     th {
       background: var(--bg);
@@ -258,13 +325,112 @@ import { SyncResult } from '../../core/models/types';
     }
 
     .success-msg { color: var(--success); }
+
+    /* Maestro section */
+    .maestro-section {
+      margin-top: 28px;
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+    }
+
+    .maestro-header { margin-bottom: 12px; }
+
+    .maestro-title-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .mapping-link {
+      font-size: 12px;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .mapping-link:hover { text-decoration: underline; }
+
+    .maestro-controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .sku-filter {
+      flex: 1;
+      min-width: 200px;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: var(--font-mono);
+      background: var(--bg);
+      color: var(--text);
+    }
+    .sku-filter:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    .btn-select-all, .btn-clear {
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      cursor: pointer;
+      background: var(--surface);
+      color: var(--text);
+      white-space: nowrap;
+      transition: background 0.12s;
+    }
+    .btn-select-all:hover { background: var(--bg); }
+    .btn-clear { color: var(--danger); border-color: var(--danger); }
+    .btn-clear:hover { background: var(--danger-bg); }
+
+    .maestro-table-wrap {
+      max-height: 400px;
+      border-top: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .cb-col { width: 36px; text-align: center; padding: 8px 4px; }
+
+    tr.selected-row td { background: #F0F4FF; }
+    tr { cursor: pointer; }
+    tr:hover td { background: var(--bg); }
+    tr.selected-row:hover td { background: #E8EEFF; }
   `],
 })
 export class DailySyncCardComponent {
   syncing = signal(false);
+  downloading = signal(false);
   result = signal<SyncResult | null>(null);
   error = signal('');
+  downloadError = signal('');
   resultTab = signal<'matched' | 'unmatched'>('matched');
+  maestroFilter = signal('');
+  selectedIndices = signal<Set<number>>(new Set());
+
+  maestroColumns = computed(() => {
+    const rows = this.result()?.maestro_rows ?? [];
+    if (rows.length === 0) return [];
+    return Object.keys(rows[0]);
+  });
+
+  filteredRows = computed(() => {
+    const rows = this.result()?.maestro_rows ?? [];
+    const skuCol = this.result()?.maestro_sku_col ?? '';
+    const filter = this.maestroFilter().trim();
+    const indexed = rows.map((row, idx) => ({ row, idx }));
+    if (!filter) return indexed;
+    const skus = filter.split(';').map(s => s.trim().toLowerCase()).filter(Boolean);
+    return indexed.filter(({ row }) => skus.includes((row[skuCol] ?? '').toLowerCase()));
+  });
 
   constructor(private api: ApiService) {}
 
@@ -274,6 +440,8 @@ export class DailySyncCardComponent {
     this.syncing.set(true);
     this.error.set('');
     this.result.set(null);
+    this.selectedIndices.set(new Set());
+    this.maestroFilter.set('');
 
     this.api.sync(file).subscribe({
       next: res => {
@@ -289,15 +457,56 @@ export class DailySyncCardComponent {
     });
   }
 
+  toggleRow(idx: number) {
+    const s = new Set(this.selectedIndices());
+    if (s.has(idx)) s.delete(idx); else s.add(idx);
+    this.selectedIndices.set(s);
+  }
+
+  selectAll() {
+    const s = new Set(this.selectedIndices());
+    for (const { idx } of this.filteredRows()) s.add(idx);
+    this.selectedIndices.set(s);
+  }
+
+  clearSelection() {
+    this.selectedIndices.set(new Set());
+  }
+
   download() {
     const res = this.result();
     if (!res) return;
-    const bytes = Uint8Array.from(atob(res.file_b64), c => c.charCodeAt(0));
+
+    const selected = this.selectedIndices();
+    if (selected.size === 0) {
+      this._triggerDownload(res.file_b64, res.filename);
+      return;
+    }
+
+    const selectedRows = res.maestro_rows.filter((_, i) => selected.has(i));
+    this.downloading.set(true);
+    this.downloadError.set('');
+
+    this.api.addProducts(res.file_b64, res.format, selectedRows).subscribe({
+      next: data => {
+        this.downloading.set(false);
+        this._triggerDownload(data.file_b64, data.filename);
+      },
+      error: err => {
+        this.downloading.set(false);
+        const detail = err.error?.detail;
+        this.downloadError.set(typeof detail === 'string' ? detail : 'Errore durante l\'aggiunta dei prodotti. Configura il mapping in /settings.');
+      },
+    });
+  }
+
+  private _triggerDownload(b64: string, filename: string) {
+    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
     const blob = new Blob([bytes]);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = res.filename;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   }
