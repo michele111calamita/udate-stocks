@@ -23,9 +23,25 @@ export interface MatchedRow {
   new_qty: string;
 }
 
+export type MaestroRow = Record<string, string>;
+
 export interface SyncResult {
   filename: string;
   file_b64: string;
+  format: string;
+  maestro_sku_col: string;
   matched: MatchedRow[];
   unmatched: string[];
+  maestro_rows: MaestroRow[];
+}
+
+export interface MappingConfig {
+  mappings: Record<string, string>;
+  maestro_columns: string[];
+  shopify_columns: string[];
+}
+
+export interface AddProductsResponse {
+  file_b64: string;
+  filename: string;
 }

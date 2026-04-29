@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { User, TemplateInfo, SyncResult } from '../models/types';
+import { User, TemplateInfo, SyncResult, MappingConfig, AddProductsResponse, MaestroRow } from '../models/types';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -21,6 +21,22 @@ export class ApiService {
     const form = new FormData();
     form.append('file', file);
     return this.http.post<SyncResult>('/api/sync', form);
+  }
+
+  getMapping(): Observable<MappingConfig> {
+    return this.http.get<MappingConfig>('/api/mapping');
+  }
+
+  saveMapping(mappings: Record<string, string>): Observable<void> {
+    return this.http.put<void>('/api/mapping', { mappings });
+  }
+
+  addProducts(fileb64: string, format: string, selectedRows: MaestroRow[]): Observable<AddProductsResponse> {
+    return this.http.post<AddProductsResponse>('/api/sync/add-products', {
+      file_b64: fileb64,
+      format,
+      selected_rows: selectedRows,
+    });
   }
 
   createUser(email: string, password: string, is_admin: boolean): Observable<User> {
