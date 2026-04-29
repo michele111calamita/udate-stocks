@@ -782,14 +782,26 @@ export class DailySyncCardComponent {
 
   maestroPreviewRows = computed(() => (this.result()?.maestro_rows ?? []).slice(0, 5));
 
-  filteredRows = computed(() => {
+  newMaestroRows = computed(() => {
     const rows = this.result()?.maestro_rows ?? [];
     const skuCol = this.result()?.maestro_sku_col ?? '';
+    const matchedSkus = new Set((this.result()?.matched ?? []).map(m => m.sku.toLowerCase()));
+    const shopifySkus = new Set((this.result()?.unmatched ?? []).map(s => s.toLowerCase()));
+    return rows
+      .map((row, idx) => ({ row, idx }))
+      .filter(({ row }) => {
+        const sku = (row[skuCol] ?? '').toLowerCase();
+        return !matchedSkus.has(sku) && !shopifySkus.has(sku);
+      });
+  });
+
+  filteredRows = computed(() => {
+    const base = this.newMaestroRows();
+    const skuCol = this.result()?.maestro_sku_col ?? '';
     const filter = this.maestroFilter().trim();
-    const indexed = rows.map((row, idx) => ({ row, idx }));
-    if (!filter) return indexed;
+    if (!filter) return base;
     const skus = filter.split(';').map(s => s.trim().toLowerCase()).filter(Boolean);
-    return indexed.filter(({ row }) => skus.includes((row[skuCol] ?? '').toLowerCase()));
+    return base.filter(({ row }) => skus.includes((row[skuCol] ?? '').toLowerCase()));
   });
 
   constructor(private api: ApiService) {}
@@ -820,10 +832,13 @@ export class DailySyncCardComponent {
         this.result.set(res);
         this.resultTab.set('matched');
         this.syncing.set(false);
+        // Pre-select only rows NOT already in Shopify (genuinely new products)
         const matchedSkus = new Set(res.matched.map(m => m.sku.toLowerCase()));
+        const shopifySkus = new Set(res.unmatched.map(s => s.toLowerCase()));
         const preSelected = new Set<number>();
         res.maestro_rows.forEach((row, idx) => {
-          if (matchedSkus.has((row[res.maestro_sku_col] ?? '').toLowerCase())) preSelected.add(idx);
+          const sku = (row[res.maestro_sku_col] ?? '').toLowerCase();
+          if (!matchedSkus.has(sku) && !shopifySkus.has(sku)) preSelected.add(idx);
         });
         this.selectedIndices.set(preSelected);
       },

@@ -105,12 +105,24 @@ def add_products(
     file_bytes = base64.b64decode(body.file_b64)
     shopify_df = read_file_from_bytes(file_bytes, body.format)
 
+    # Find the Shopify SKU column to use for deduplication
+    template = db.query(models.ShopifyTemplate).filter(
+        models.ShopifyTemplate.user_id == user.id
+    ).first()
+    sku_col = template.sku_column if template else None
+    existing_skus: set[str] = set()
+    if sku_col and sku_col in shopify_df.columns:
+        existing_skus = set(shopify_df[sku_col].dropna().str.strip().str.lower())
+
     new_rows = []
     for maestro_row in body.selected_rows:
         new_row = {col: "" for col in shopify_df.columns}
         for shopify_col, maestro_col in cm.mappings.items():
             if shopify_col in new_row and maestro_col in maestro_row:
                 new_row[shopify_col] = maestro_row[maestro_col]
+        # Skip rows whose SKU already exists in the Shopify file
+        if sku_col and new_row.get(sku_col, "").strip().lower() in existing_skus:
+            continue
         new_rows.append(new_row)
 
     if new_rows:
@@ -121,9 +133,6 @@ def add_products(
 
     output_bytes = write_file(shopify_df, body.format)
 
-    template = db.query(models.ShopifyTemplate).filter(
-        models.ShopifyTemplate.user_id == user.id
-    ).first()
     if template:
         with open(template.filepath, "wb") as f:
             f.write(output_bytes)
