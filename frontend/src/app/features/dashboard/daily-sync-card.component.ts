@@ -448,6 +448,12 @@ export class DailySyncCardComponent {
         this.result.set(res);
         this.resultTab.set('matched');
         this.syncing.set(false);
+        const matchedSkus = new Set(res.matched.map(m => m.sku.toLowerCase()));
+        const preSelected = new Set<number>();
+        res.maestro_rows.forEach((row, idx) => {
+          if (matchedSkus.has((row[res.maestro_sku_col] ?? '').toLowerCase())) preSelected.add(idx);
+        });
+        this.selectedIndices.set(preSelected);
       },
       error: err => {
         const detail = err.error?.detail;
