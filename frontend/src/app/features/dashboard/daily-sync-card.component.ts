@@ -133,6 +133,38 @@ import { SyncResult, MaestroRow, MappingConfig } from '../../core/models/types';
               </div>
             </div>
           }
+
+          <div class="preview-toggle">
+            <button class="btn-preview" (click)="showMaestroPreview.set(!showMaestroPreview())">
+              {{ showMaestroPreview() ? 'Nascondi anteprima Maestro' : 'Anteprima file Maestro' }}
+            </button>
+          </div>
+
+          @if (showMaestroPreview() && maestroColumns().length) {
+            <div class="preview-section">
+              <h3 class="preview-title">Anteprima file Maestro (prime 5 righe)</h3>
+              <div class="preview-scroll">
+                <table class="preview-table">
+                  <thead>
+                    <tr>
+                      @for (col of maestroColumns(); track col) {
+                        <th>{{ col }}</th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of maestroPreviewRows(); track $index) {
+                      <tr>
+                        @for (col of maestroColumns(); track col) {
+                          <td>{{ row[col] }}</td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
         </div>
 
         <!-- Maestro product selection section -->
@@ -523,6 +555,7 @@ export class DailySyncCardComponent {
   maestroFilter = signal('');
   selectedIndices = signal<Set<number>>(new Set());
   showPreview = signal(false);
+  showMaestroPreview = signal(false);
   shopifyConfig = signal<MappingConfig | null>(null);
 
   shopifyPreviewColumns = computed(() => this.shopifyConfig()?.shopify_columns ?? []);
@@ -533,6 +566,8 @@ export class DailySyncCardComponent {
     if (rows.length === 0) return [];
     return Object.keys(rows[0]);
   });
+
+  maestroPreviewRows = computed(() => (this.result()?.maestro_rows ?? []).slice(0, 5));
 
   filteredRows = computed(() => {
     const rows = this.result()?.maestro_rows ?? [];
@@ -565,6 +600,7 @@ export class DailySyncCardComponent {
     this.result.set(null);
     this.selectedIndices.set(new Set());
     this.maestroFilter.set('');
+    this.showMaestroPreview.set(false);
 
     this.api.sync(file).subscribe({
       next: res => {
