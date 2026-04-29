@@ -76,6 +76,9 @@ app.include_router(shopify_router.router)
 from app.routers import sync as sync_router
 app.include_router(sync_router.router)
 
+from app.routers import mapping as mapping_router
+app.include_router(mapping_router.router)
+
 import os as _os
 from fastapi.responses import FileResponse
 from fastapi import HTTPException
