@@ -832,15 +832,7 @@ export class DailySyncCardComponent {
         this.result.set(res);
         this.resultTab.set('matched');
         this.syncing.set(false);
-        // Pre-select only rows NOT already in Shopify (genuinely new products)
-        const matchedSkus = new Set(res.matched.map(m => m.sku.toLowerCase()));
-        const shopifySkus = new Set(res.unmatched.map(s => s.toLowerCase()));
-        const preSelected = new Set<number>();
-        res.maestro_rows.forEach((row, idx) => {
-          const sku = (row[res.maestro_sku_col] ?? '').toLowerCase();
-          if (!matchedSkus.has(sku) && !shopifySkus.has(sku)) preSelected.add(idx);
-        });
-        this.selectedIndices.set(preSelected);
+        this.selectedIndices.set(new Set());
       },
       error: err => {
         const detail = err.error?.detail;
