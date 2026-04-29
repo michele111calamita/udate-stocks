@@ -25,6 +25,13 @@ def write_file(df: pd.DataFrame, fmt: str) -> bytes:
         df.to_excel(buf, index=False, engine="openpyxl")
     return buf.getvalue()
 
+def read_file_from_bytes(data: bytes, fmt: str) -> pd.DataFrame:
+    buf = io.BytesIO(data)
+    if fmt == "csv":
+        return pd.read_csv(buf, dtype=str)
+    engine = "xlrd" if fmt == "xls" else "openpyxl"
+    return pd.read_excel(buf, dtype=str, engine=engine)
+
 def sync_quantities(
     shopify_path: str,
     shopify_fmt: str,

@@ -27,3 +27,16 @@ class TemplateInfo(BaseModel):
     sku_column: str
     qty_column: str
     model_config = {"from_attributes": True}
+
+class ColumnMappingRead(BaseModel):
+    mappings: dict[str, str]
+    maestro_columns: list[str]
+    shopify_columns: list[str]
+
+class ColumnMappingWrite(BaseModel):
+    mappings: dict[str, str]
+
+class AddProductsRequest(BaseModel):
+    file_b64: str
+    format: str  # "csv" | "xlsx" | "xls"
+    selected_rows: list[dict[str, str]]
