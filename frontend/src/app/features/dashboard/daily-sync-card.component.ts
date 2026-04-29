@@ -116,7 +116,13 @@ import { SyncResult, MaestroRow, MappingConfig } from '../../core/models/types';
                   <thead>
                     <tr>
                       @for (col of shopifyPreviewColumns(); track col) {
-                        <th>{{ col }}</th>
+                        <th class="preview-th">
+                          <span class="th-label">{{ col }}</span>
+                          @if (localMappings()[col]) {
+                            <span class="map-badge shopify-badge">→ {{ localMappings()[col] }}</span>
+                          }
+                          <button class="map-btn" (click)="openPopup(col, 'shopify', $event)" title="Associa colonna">↔</button>
+                        </th>
                       }
                     </tr>
                   </thead>
@@ -148,7 +154,13 @@ import { SyncResult, MaestroRow, MappingConfig } from '../../core/models/types';
                   <thead>
                     <tr>
                       @for (col of maestroColumns(); track col) {
-                        <th>{{ col }}</th>
+                        <th class="preview-th">
+                          <span class="th-label">{{ col }}</span>
+                          @if (reverseMappings()[col]) {
+                            <span class="map-badge maestro-badge">← {{ reverseMappings()[col] }}</span>
+                          }
+                          <button class="map-btn" (click)="openPopup(col, 'maestro', $event)" title="Associa colonna">↔</button>
+                        </th>
                       }
                     </tr>
                   </thead>
@@ -222,6 +234,45 @@ import { SyncResult, MaestroRow, MappingConfig } from '../../core/models/types';
             }
           </div>
         </div>
+
+        @if (popupCol()) {
+          <div class="popup-overlay" (click)="closePopup()">
+            <div class="popup" (click)="$event.stopPropagation()">
+              <div class="popup-head">
+                <span class="popup-title">Associa colonna</span>
+                <button class="popup-x" (click)="closePopup()">×</button>
+              </div>
+              <div class="popup-body">
+                @if (popupCol()!.side === 'shopify') {
+                  <p class="popup-desc">Colonna Shopify <code class="popup-code">{{ popupCol()!.col }}</code> corrisponde a:</p>
+                  <select class="popup-select" [ngModel]="popupSelection()" (ngModelChange)="popupSelection.set($event)">
+                    <option value="">— nessuna —</option>
+                    @for (c of maestroColumns(); track c) {
+                      <option [value]="c">{{ c }}</option>
+                    }
+                  </select>
+                } @else {
+                  <p class="popup-desc">Colonna Maestro <code class="popup-code">{{ popupCol()!.col }}</code> corrisponde a:</p>
+                  <select class="popup-select" [ngModel]="popupSelection()" (ngModelChange)="popupSelection.set($event)">
+                    <option value="">— nessuna —</option>
+                    @for (c of shopifyPreviewColumns(); track c) {
+                      <option [value]="c">{{ c }}</option>
+                    }
+                  </select>
+                }
+              </div>
+              <div class="popup-foot">
+                @if (saveMappingOk()) {
+                  <span class="ok-msg">Salvato</span>
+                }
+                <button class="btn-cancel" (click)="closePopup()">Annulla</button>
+                <button class="btn-save-map" (click)="saveColMapping()" [disabled]="savingMapping()">
+                  @if (savingMapping()) { ... } @else { Salva }
+                </button>
+              </div>
+            </div>
+          </div>
+        }
       }
     </div>
   `,
@@ -543,6 +594,150 @@ import { SyncResult, MaestroRow, MappingConfig } from '../../core/models/types';
     }
 
     .preview-table tr:last-child td { border-bottom: none; }
+
+    /* Column mapping */
+    .preview-th {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    .th-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+    .map-badge {
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 100px;
+      font-weight: 500;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .shopify-badge { background: #E6F0FF; color: #2563EB; }
+    .maestro-badge { background: #ECFDF5; color: #059669; }
+
+    .map-btn {
+      flex-shrink: 0;
+      padding: 1px 5px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      font-size: 11px;
+      cursor: pointer;
+      color: var(--text-muted);
+      line-height: 1.5;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+    .map-btn:hover { background: var(--bg); color: var(--accent); border-color: var(--accent); }
+
+    /* Popup */
+    .popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .popup {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      width: 100%;
+      max-width: 380px;
+      overflow: hidden;
+    }
+
+    .popup-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .popup-title {
+      font-size: 14px;
+      font-weight: 700;
+      font-family: var(--font-display);
+    }
+
+    .popup-x {
+      background: none;
+      border: none;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 0 4px;
+    }
+    .popup-x:hover { color: var(--text); }
+
+    .popup-body { padding: 16px; }
+
+    .popup-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
+
+    .popup-code {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--bg);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--text);
+    }
+
+    .popup-select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+    }
+    .popup-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    .popup-foot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      justify-content: flex-end;
+    }
+
+    .ok-msg { font-size: 12px; color: var(--success); flex: 1; }
+
+    .btn-cancel {
+      padding: 7px 14px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: var(--font-body);
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+    .btn-cancel:hover { color: var(--text); border-color: var(--text-muted); }
+
+    .btn-save-map {
+      padding: 7px 16px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-save-map:hover:not(:disabled) { background: var(--accent-dark); }
+    .btn-save-map:disabled { opacity: 0.6; cursor: not-allowed; }
   `],
 })
 export class DailySyncCardComponent {
@@ -557,9 +752,21 @@ export class DailySyncCardComponent {
   showPreview = signal(false);
   showMaestroPreview = signal(false);
   shopifyConfig = signal<MappingConfig | null>(null);
+  localMappings = signal<Record<string, string>>({});
+  popupCol = signal<{ col: string; side: 'shopify' | 'maestro' } | null>(null);
+  popupSelection = signal('');
+  savingMapping = signal(false);
+  saveMappingOk = signal(false);
 
   shopifyPreviewColumns = computed(() => this.shopifyConfig()?.shopify_columns ?? []);
   shopifyPreviewRows = computed(() => (this.shopifyConfig()?.shopify_sample_rows ?? []).slice(0, 5));
+
+  reverseMappings = computed(() => {
+    const m = this.localMappings();
+    const r: Record<string, string> = {};
+    for (const [k, v] of Object.entries(m)) if (v) r[v] = k;
+    return r;
+  });
 
   maestroColumns = computed(() => {
     const rows = this.result()?.maestro_rows ?? [];
@@ -584,7 +791,7 @@ export class DailySyncCardComponent {
   togglePreview() {
     if (!this.showPreview() && !this.shopifyConfig()) {
       this.api.getMapping().subscribe({
-        next: cfg => { this.shopifyConfig.set(cfg); this.showPreview.set(true); },
+        next: cfg => { this.shopifyConfig.set(cfg); this.localMappings.set({ ...cfg.mappings }); this.showPreview.set(true); },
         error: () => { this.showPreview.set(true); },
       });
     } else {
@@ -636,6 +843,44 @@ export class DailySyncCardComponent {
 
   clearSelection() {
     this.selectedIndices.set(new Set());
+  }
+
+  openPopup(col: string, side: 'shopify' | 'maestro', event: Event) {
+    event.stopPropagation();
+    const current = side === 'shopify' ? this.localMappings()[col] ?? '' : this.reverseMappings()[col] ?? '';
+    this.popupSelection.set(current);
+    this.popupCol.set({ col, side });
+    this.saveMappingOk.set(false);
+  }
+
+  closePopup() {
+    this.popupCol.set(null);
+    this.saveMappingOk.set(false);
+  }
+
+  saveColMapping() {
+    const popup = this.popupCol();
+    if (!popup) return;
+    const newMappings = { ...this.localMappings() };
+    if (popup.side === 'shopify') {
+      if (this.popupSelection()) newMappings[popup.col] = this.popupSelection();
+      else delete newMappings[popup.col];
+    } else {
+      for (const [k, v] of Object.entries(newMappings)) {
+        if (v === popup.col) delete newMappings[k];
+      }
+      if (this.popupSelection()) newMappings[this.popupSelection()] = popup.col;
+    }
+    this.savingMapping.set(true);
+    this.api.saveMapping(newMappings).subscribe({
+      next: () => {
+        this.localMappings.set(newMappings);
+        this.savingMapping.set(false);
+        this.saveMappingOk.set(true);
+        setTimeout(() => this.closePopup(), 800);
+      },
+      error: () => { this.savingMapping.set(false); },
+    });
   }
 
   download() {
