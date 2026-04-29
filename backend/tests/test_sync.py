@@ -19,10 +19,26 @@ def test_sync_updates_quantities(client, user_token):
         headers={"Authorization": f"Bearer {user_token}"},
     )
     assert r.status_code == 200
-    assert r.headers["X-Unmatched-SKUs"] == "1"  # SKU002 non in Maestro
-    df = pd.read_csv(io.BytesIO(r.content), dtype=str)
-    assert df[df["Variant SKU"] == "SKU001"]["Variant Inventory Qty"].values[0] == "42"
-    assert df[df["Variant SKU"] == "SKU002"]["Variant Inventory Qty"].values[0] == "3"
+    data = r.json()
+    assert data["format"] == "csv"
+    assert data["maestro_sku_col"] == "codice"
+    matched_skus = {m["sku"] for m in data["matched"]}
+    assert "SKU001" in matched_skus
+    assert data["unmatched"] == ["SKU002"]
+    assert len(data["maestro_rows"]) == 2
+    sku001_row = next(row for row in data["maestro_rows"] if row["codice"] == "SKU001")
+    assert sku001_row["giacenza"] == "42"
+
+def test_sync_saves_maestro_columns(client, user_token):
+    _upload_template(client, user_token)
+    client.post(
+        "/api/sync",
+        files={"file": ("maestro.csv", io.BytesIO(MAESTRO_CSV), "text/csv")},
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    r = client.get("/api/mapping", headers={"Authorization": f"Bearer {user_token}"})
+    assert r.status_code == 200
+    assert set(r.json()["maestro_columns"]) == {"codice", "giacenza"}
 
 def test_sync_no_template(client, user_token):
     r = client.post(
