@@ -120,6 +120,14 @@ def add_products(
         )
 
     output_bytes = write_file(shopify_df, body.format)
+
+    template = db.query(models.ShopifyTemplate).filter(
+        models.ShopifyTemplate.user_id == user.id
+    ).first()
+    if template:
+        with open(template.filepath, "wb") as f:
+            f.write(output_bytes)
+
     return {
         "file_b64": base64.b64encode(output_bytes).decode(),
         "filename": f"shopify_with_additions.{body.format}",
