@@ -784,15 +784,7 @@ export class DailySyncCardComponent {
 
   newMaestroRows = computed(() => {
     const rows = this.result()?.maestro_rows ?? [];
-    const skuCol = this.result()?.maestro_sku_col ?? '';
-    const matchedSkus = new Set((this.result()?.matched ?? []).map(m => m.sku.toLowerCase()));
-    const shopifySkus = new Set((this.result()?.unmatched ?? []).map(s => s.toLowerCase()));
-    return rows
-      .map((row, idx) => ({ row, idx }))
-      .filter(({ row }) => {
-        const sku = (row[skuCol] ?? '').toLowerCase();
-        return !matchedSkus.has(sku) && !shopifySkus.has(sku);
-      });
+    return rows.map((row, idx) => ({ row, idx }));
   });
 
   filteredRows = computed(() => {
@@ -832,7 +824,13 @@ export class DailySyncCardComponent {
         this.result.set(res);
         this.resultTab.set('matched');
         this.syncing.set(false);
-        this.selectedIndices.set(new Set());
+        // Pre-select rows already in Shopify (matched)
+        const matchedSkus = new Set(res.matched.map(m => m.sku.toLowerCase()));
+        const preSelected = new Set<number>();
+        res.maestro_rows.forEach((row, idx) => {
+          if (matchedSkus.has((row[res.maestro_sku_col] ?? '').toLowerCase())) preSelected.add(idx);
+        });
+        this.selectedIndices.set(preSelected);
       },
       error: err => {
         const detail = err.error?.detail;
