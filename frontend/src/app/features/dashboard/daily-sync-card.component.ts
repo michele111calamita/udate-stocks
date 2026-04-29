@@ -117,11 +117,13 @@ import { SyncResult, MaestroRow, MappingConfig } from '../../core/models/types';
                     <tr>
                       @for (col of shopifyPreviewColumns(); track col) {
                         <th class="preview-th">
-                          <span class="th-label">{{ col }}</span>
-                          @if (localMappings()[col]) {
-                            <span class="map-badge shopify-badge">→ {{ localMappings()[col] }}</span>
-                          }
-                          <button class="map-btn" (click)="openPopup(col, 'shopify', $event)" title="Associa colonna">↔</button>
+                          <div class="th-inner">
+                            <span class="th-label">{{ col }}</span>
+                            @if (localMappings()[col]) {
+                              <span class="map-badge shopify-badge">→ {{ localMappings()[col] }}</span>
+                            }
+                            <button class="map-btn" (click)="openPopup(col, 'shopify', $event)" title="Associa colonna">↔</button>
+                          </div>
                         </th>
                       }
                     </tr>
@@ -155,11 +157,13 @@ import { SyncResult, MaestroRow, MappingConfig } from '../../core/models/types';
                     <tr>
                       @for (col of maestroColumns(); track col) {
                         <th class="preview-th">
-                          <span class="th-label">{{ col }}</span>
-                          @if (reverseMappings()[col]) {
-                            <span class="map-badge maestro-badge">← {{ reverseMappings()[col] }}</span>
-                          }
-                          <button class="map-btn" (click)="openPopup(col, 'maestro', $event)" title="Associa colonna">↔</button>
+                          <div class="th-inner">
+                            <span class="th-label">{{ col }}</span>
+                            @if (reverseMappings()[col]) {
+                              <span class="map-badge maestro-badge">← {{ reverseMappings()[col] }}</span>
+                            }
+                            <button class="map-btn" (click)="openPopup(col, 'maestro', $event)" title="Associa colonna">↔</button>
+                          </div>
                         </th>
                       }
                     </tr>
@@ -596,11 +600,13 @@ import { SyncResult, MaestroRow, MappingConfig } from '../../core/models/types';
     .preview-table tr:last-child td { border-bottom: none; }
 
     /* Column mapping */
-    .preview-th {
+    .preview-th { white-space: nowrap; padding: 0; }
+
+    .th-inner {
       display: flex;
       align-items: center;
       gap: 5px;
-      white-space: nowrap;
+      padding: 7px 12px;
     }
 
     .th-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
