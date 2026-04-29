@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -56,11 +56,40 @@ import { MappingConfig } from '../../core/models/types';
             @if (saveOk()) {
               <span class="ok-msg">Mapping salvato</span>
             }
+            <button class="btn-preview" (click)="showPreview.set(!showPreview())">
+              {{ showPreview() ? 'Nascondi anteprima' : 'Anteprima template Shopify' }}
+            </button>
             <button class="btn-save" (click)="save()" [disabled]="saving()">
               @if (saving()) { Salvataggio... } @else { Salva mapping }
             </button>
           </div>
         </div>
+
+        @if (showPreview() && previewColumns().length) {
+          <div class="preview-section">
+            <h3 class="preview-title">Anteprima template Shopify (prime 5 righe)</h3>
+            <div class="preview-scroll">
+              <table class="preview-table">
+                <thead>
+                  <tr>
+                    @for (col of previewColumns(); track col) {
+                      <th>{{ col }}</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of previewRows(); track $index) {
+                    <tr>
+                      @for (col of previewColumns(); track col) {
+                        <td>{{ row[col] }}</td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
       }
     </div>
   `,
@@ -168,6 +197,77 @@ import { MappingConfig } from '../../core/models/types';
 
     .error-msg { font-size: 13px; color: var(--danger); }
     .ok-msg { font-size: 13px; color: var(--success); }
+
+    .btn-preview {
+      padding: 9px 16px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .btn-preview:hover { color: var(--text); border-color: var(--text-muted); }
+
+    .preview-section {
+      margin-top: 20px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .preview-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 12px 16px;
+      margin: 0;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .preview-scroll {
+      overflow-x: auto;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .preview-table {
+      border-collapse: collapse;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .preview-table th {
+      background: var(--bg);
+      padding: 8px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+    }
+
+    .preview-table td {
+      padding: 6px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font-mono);
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .preview-table tr:last-child td { border-bottom: none; }
   `],
 })
 export class SettingsMappingComponent implements OnInit {
@@ -178,7 +278,11 @@ export class SettingsMappingComponent implements OnInit {
   saving = signal(false);
   saveError = signal('');
   saveOk = signal(false);
+  showPreview = signal(false);
   localMappings: Record<string, string> = {};
+
+  previewColumns = computed(() => this.config()?.shopify_columns ?? []);
+  previewRows = computed(() => this.config()?.shopify_sample_rows ?? []);
 
   constructor(private api: ApiService) {}
 
