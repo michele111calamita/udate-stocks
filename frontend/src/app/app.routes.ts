@@ -17,6 +17,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/admin/admin.component').then(m => m.AdminComponent),
     canActivate: [authGuard, adminGuard],
   },
+  {
+    path: 'settings',
+    loadComponent: () => import('./features/settings/settings-mapping.component').then(m => m.SettingsMappingComponent),
+    canActivate: [authGuard],
+  },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: '**', redirectTo: 'dashboard' },
 ];
