@@ -114,12 +114,20 @@ def add_products(
     if sku_col and sku_col in shopify_df.columns:
         existing_skus = set(shopify_df[sku_col].dropna().str.strip().str.lower())
 
+    # Auto-detect Maestro SKU column so it always gets copied to the Shopify SKU column
+    # even if the user didn't configure it explicitly in the mapping
+    maestro_cols = list(body.selected_rows[0].keys()) if body.selected_rows else []
+    maestro_sku_col = detect_column(maestro_cols, SKU_CANDIDATES)
+
     new_rows = []
     for maestro_row in body.selected_rows:
         new_row = {col: "" for col in shopify_df.columns}
         for shopify_col, maestro_col in cm.mappings.items():
             if shopify_col in new_row and maestro_col in maestro_row:
                 new_row[shopify_col] = maestro_row[maestro_col]
+        # Always ensure the Shopify SKU column is populated from Maestro SKU
+        if sku_col and maestro_sku_col and not new_row.get(sku_col):
+            new_row[sku_col] = maestro_row.get(maestro_sku_col, "")
         # Skip rows whose SKU already exists in the Shopify file
         if sku_col and new_row.get(sku_col, "").strip().lower() in existing_skus:
             continue
