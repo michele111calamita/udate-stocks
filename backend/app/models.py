@@ -1,7 +1,8 @@
 import uuid
 import enum
 from datetime import datetime, timezone
-from sqlalchemy import String, Boolean, DateTime, ForeignKey, Enum as SAEnum
+from typing import Optional
+from sqlalchemy import String, Boolean, DateTime, ForeignKey, Enum as SAEnum, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -19,7 +20,8 @@ class User(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
-    template: Mapped["ShopifyTemplate"] = relationship(back_populates="user", uselist=False)
+    template: Mapped[Optional["ShopifyTemplate"]] = relationship(back_populates="user", uselist=False)
+    column_mapping: Mapped[Optional["ColumnMapping"]] = relationship(back_populates="user", uselist=False)
 
 class ShopifyTemplate(Base):
     __tablename__ = "shopify_templates"
@@ -34,3 +36,14 @@ class ShopifyTemplate(Base):
     uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     user: Mapped["User"] = relationship(back_populates="template")
+
+class ColumnMapping(Base):
+    __tablename__ = "column_mappings"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), unique=True)
+    maestro_columns: Mapped[list] = mapped_column(JSON, default=list)
+    mappings: Mapped[dict] = mapped_column(JSON, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    user: Mapped["User"] = relationship(back_populates="column_mapping")
