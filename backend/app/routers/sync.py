@@ -131,12 +131,17 @@ def add_products(
         # Skip rows whose SKU already exists in the Shopify file
         if sku_col and new_row.get(sku_col, "").strip().lower() in existing_skus:
             continue
-        # Default required Shopify variant fields so import validation passes
+        # Default required Shopify fields so import validation passes
         shopify_col_lower = {c.strip().lower(): c for c in shopify_df.columns}
         _defaults = {
             "status": "draft",
             "variant fulfillment service": "manual",
             "variant inventory policy": "deny",
+            "variant taxable": "TRUE",
+            "variant requires shipping": "TRUE",
+            "gift card": "FALSE",
+            "variant inventory tracker": "shopify",
+            "variant price": "0",
         }
         for key, default_val in _defaults.items():
             col = shopify_col_lower.get(key)
