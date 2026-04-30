@@ -131,6 +131,10 @@ def add_products(
         # Skip rows whose SKU already exists in the Shopify file
         if sku_col and new_row.get(sku_col, "").strip().lower() in existing_skus:
             continue
+        # Default Status to "draft" for new products so Shopify import doesn't reject them
+        status_col = next((c for c in shopify_df.columns if c.strip().lower() == "status"), None)
+        if status_col and not new_row.get(status_col):
+            new_row[status_col] = "draft"
         new_rows.append(new_row)
 
     if new_rows:
