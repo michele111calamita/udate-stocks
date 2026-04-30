@@ -58,6 +58,9 @@ def sync_quantities(
     matched: list[dict] = []
     unmatched: list[str] = []
 
+    col_lower = {c.strip().lower(): c for c in shopify_df.columns}
+    tracker_col = col_lower.get("variant inventory tracker")
+
     for i, row in shopify_df.iterrows():
         sku = str(row[shopify_sku_col]).strip()
         if not sku or sku == "nan":
@@ -66,6 +69,8 @@ def sync_quantities(
             old_qty = str(row[shopify_qty_col]).strip()
             new_qty = maestro_map[sku]
             shopify_df.at[i, shopify_qty_col] = new_qty
+            if tracker_col:
+                shopify_df.at[i, tracker_col] = "shopify"
             matched.append({"sku": sku, "old_qty": old_qty, "new_qty": new_qty})
         else:
             unmatched.append(sku)
